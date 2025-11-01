@@ -23,6 +23,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import checkAuthStatus from "@/utility/auth";
+import Link from "next/link";
 const { user } = await checkAuthStatus();
 const { role } = user || { role: "guest" };
 const navMainItems = [
@@ -95,10 +96,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
+              <Link href="/">
                 <IconHome className="!size-5" />
                 <span className="text-base font-semibold">Home</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
