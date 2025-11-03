@@ -7,13 +7,14 @@ import PasswordInput from "./PasswordInput";
 import loginUser from "@/utility/login";
 import { useRouter } from "next/navigation";
 import checkAuthStatus from "@/utility/auth";
-
+import { useUser } from "@/providers/UserProvider";
 interface FormData {
   email: string;
   password: string;
 }
 
 const Login: React.FC = () => {
+  const { setUser } = useUser();
   const {
     register,
     handleSubmit,
@@ -27,6 +28,7 @@ const Login: React.FC = () => {
       const res = await loginUser(data.email, data.password);
       if (res.success) {
         const authStatus = await checkAuthStatus();
+        setUser(authStatus.user);
         if (authStatus.isAuthenticated && authStatus.user) {
           const { role } = authStatus.user;
 

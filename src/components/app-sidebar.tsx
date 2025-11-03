@@ -4,7 +4,6 @@ import * as React from "react";
 import {
   IconDashboard,
   IconHelp,
-  IconInnerShadowTop,
   IconSearch,
   IconSettings,
   IconHome,
@@ -22,10 +21,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import checkAuthStatus from "@/utility/auth";
+
 import Link from "next/link";
-const { user } = await checkAuthStatus();
-const { role } = user || { role: "guest" };
+
 const navMainItems = [
   {
     title: "Dashboard",
@@ -53,18 +51,18 @@ const navMainItems = [
   //   icon: IconUsers,
   // },
 ];
-if (role === "ADMIN") {
-  navMainItems.push({
-    title: "Manage Doctors",
-    url: "/dashboard/admin/manage-doctors",
-    icon: IconSettings,
-  });
-}
+// if (role === "ADMIN") {
+//   navMainItems.push({
+//     title: "Manage Doctors",
+//     url: "/dashboard/admin/manage-doctors",
+//     icon: IconSettings,
+//   });
+// }
 const data = {
   user: {
-    name: user?.name,
-    email: user?.email,
-    avatar: user.imageUrl,
+    name: "",
+    email: "",
+    avatar: "",
   },
   navMain: navMainItems,
   navSecondary: [

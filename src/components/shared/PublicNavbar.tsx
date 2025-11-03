@@ -1,116 +1,94 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useUser } from "@/providers/UserProvider";
 import { Button } from "../ui/button";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetFooter,
-  SheetTrigger,
-} from "../ui/sheet";
-import { Menu } from "lucide-react";
-import checkAuthStatus from "@/utility/auth";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
+import Link from "next/link";
 
-export default function PublicNavbar() {
-  const [user, setUser] = useState<{ role?: string } | null>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await checkAuthStatus();
-        if (res.isAuthenticated) {
-          setUser(res.user);
-        } else {
-          setUser({ role: "guest" });
-        }
-      } catch (err) {
-        setUser({ role: "guest" });
-      }
-    };
-    fetchUser();
-  }, []);
-
+const PublicNavbar = () => {
+  const { user } = useUser();
   const role = user?.role || "guest";
 
   const navItems = [
-    { label: "Home", href: "/" },
-    { label: "Consultation", href: "/consultation" },
-    { label: "Health Plans", href: "/health-plans" },
-    { label: "Diagonstics", href: "/diagonstics" },
-    { label: "NGOs", href: "/ngos" },
+    { href: "#", label: "consultation" },
+    { href: "#", label: "Health Plans" },
+    { href: "#", label: "Medicine" },
+    { href: "#", label: "Diagonstics" },
+    { href: "#", label: "NGOs" },
   ];
 
   if (role === "ADMIN") {
-    navItems.push({
-      href: "/dashboard/admin",
-      label: "Admin Dashboard",
-    });
+    navItems.push({ href: "/dashboard/admin", label: "Admin Dashboard" });
   }
 
   return (
-    <header className="flex  md:justify-around bg-background/95 h-16 p-4 w-full border-b shadow sticky top-0  z-50">
-      <div className="flex w-full  md:justify-around items-center">
-        <div>
-          <Link href="/" className="text-primary">
-            PH Health
-          </Link>
-        </div>
-        <nav className="hidden md:block">
-          <ul className="flex gap-6">
-            {navItems.map((item) => (
-              <li key={item.label}>
-                <Link href={item.href}>{item.label}</Link>
-              </li>
-            ))}
-          </ul>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur  dark:bg-background/95">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <Link href="/" className="flex items-center space-x-2">
+          <span className="text-xl font-bold text-primary">PH Doc</span>
+        </Link>
+
+        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+          {navItems.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className="text-foreground hover:text-primary transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
-        <div className="hidden md:block">
+
+        <div className="hidden md:flex items-center space-x-2">
           {role !== "guest" ? (
-            <Button>Logout</Button>
+            <Button variant="destructive">Logout</Button>
           ) : (
-            <Link href="/login">
+            <Link href="/login" className="text-lg font-medium">
               <Button>Login</Button>
             </Link>
           )}
         </div>
-      </div>
 
-      {/* Mobile Menu */}
-      <div className=" md:hidden">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline">
-              <Menu />
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="bg-accent">
-            <ul className="p-4 space-y-2">
-              {navItems.map((item) => (
-                <li
-                  key={item.label}
-                  className="bg-amber-200 p-2 cursor-pointer hover:bg-amber-100 text-center"
-                >
-                  <Link href={item.href}>{item.label}</Link>
-                </li>
-              ))}
-              {role !== "guest" ? (
-                <Button>Logout</Button>
-              ) : (
-                <Link href="/login">
-                  <Button className="w-full">Login</Button>
-                </Link>
-              )}
-            </ul>
-            <SheetFooter>
-              <SheetClose asChild>
-                <Button variant="outline">Close</Button>
-              </SheetClose>
-            </SheetFooter>
-          </SheetContent>
-        </Sheet>
+        {/* Mobile Menu */}
+
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline">
+                {" "}
+                <menu />{" "}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px] p-4">
+              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+              <nav className="flex flex-col space-y-4 mt-8">
+                {navItems.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className="text-lg font-medium"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <div className="border-t pt-4 flex flex-col space-y-4">
+                  <div className="flex justify-center"></div>
+                  {role !== "guest" ? (
+                    <Button variant="destructive">Logout</Button>
+                  ) : (
+                    <Link href="/login" className="text-lg font-medium">
+                      <Button>Login</Button>
+                    </Link>
+                  )}
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </header>
   );
-}
+};
+
+export default PublicNavbar;

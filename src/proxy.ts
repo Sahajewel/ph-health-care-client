@@ -4,7 +4,7 @@ import { userInterface } from "./types/userTypes";
 import { jwtDecode } from "jwt-decode";
 
 const roleBasedRoutes = {
-  ADMIN: ["/admin/dashboard"],
+  ADMIN: ["/dashboard/admin"],
   DOCTOR: ["/doctor/dashboard"],
   PATIENT: [
     "/patient/dashboard",
@@ -94,7 +94,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/admin/dashboard/:path",
+    "/dashboard/admin/:path*",
     "/login",
     "/redirect",
     "/forgot-password",
