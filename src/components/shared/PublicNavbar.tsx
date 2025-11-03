@@ -4,6 +4,7 @@ import { useUser } from "@/providers/UserProvider";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
 import Link from "next/link";
+import { logout } from "@/utility/logout";
 
 const PublicNavbar = () => {
   const { user } = useUser();
@@ -42,7 +43,9 @@ const PublicNavbar = () => {
 
         <div className="hidden md:flex items-center space-x-2">
           {role !== "guest" ? (
-            <Button variant="destructive">Logout</Button>
+            <Button variant="destructive" onClick={() => logout()}>
+              Logout
+            </Button>
           ) : (
             <Link href="/login" className="text-lg font-medium">
               <Button>Login</Button>
