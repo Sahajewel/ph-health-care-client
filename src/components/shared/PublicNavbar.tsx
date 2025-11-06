@@ -2,9 +2,10 @@
 
 import { useUser } from "@/providers/UserProvider";
 import { Button } from "../ui/button";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
+
 import Link from "next/link";
 import { logout } from "@/utility/logout";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
 
 const PublicNavbar = () => {
   const { user } = useUser();
