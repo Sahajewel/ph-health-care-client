@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Link from "next/link";
@@ -9,29 +10,37 @@ import { registerPatient } from "@/services/auth/registerPatient";
 
 export default function RegisterForm() {
   const [state, formAction, isPending] = useActionState(registerPatient, null);
-  console.log(state, "state", isPending, "isPending");
+  const getFieldError = (fieldName: string) => {
+    if (state && state.error) {
+      const fieldError = state.error.find(
+        (err: any) => err.field === fieldName
+      );
+      return fieldError ? fieldError.message : null;
+    } else {
+      return null;
+    }
+  };
+  console.log(state);
   return (
     <form action={formAction}>
       <FieldGroup>
         <Field>
           <FieldLabel htmlFor="name">Full Name</FieldLabel>
-          <Input
-            id="name"
-            name="name"
-            type="text"
-            placeholder="Full Name"
-            required
-          />
+          <Input id="name" name="name" type="text" placeholder="Full Name" />
+          {getFieldError("name") && (
+            <FieldDescription className="text-red-600">
+              {getFieldError("name")}
+            </FieldDescription>
+          )}
         </Field>
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="email"
-            required
-          />
+          <Input id="email" name="email" type="email" placeholder="email" />
+          {getFieldError("email") && (
+            <FieldDescription className="text-red-600">
+              {getFieldError("email")}
+            </FieldDescription>
+          )}
         </Field>
         <Field>
           <FieldLabel htmlFor="password">Password</FieldLabel>
@@ -40,8 +49,26 @@ export default function RegisterForm() {
             name="password"
             type="password"
             placeholder="password"
-            required
           />
+          {getFieldError("password") && (
+            <FieldDescription className="text-red-600">
+              {getFieldError("password")}
+            </FieldDescription>
+          )}
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="password">Confirm Password</FieldLabel>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            placeholder="Confirm Password"
+          />
+          {getFieldError("confirmPassword") && (
+            <FieldDescription className="text-red-600">
+              {getFieldError("confirmPassword")}
+            </FieldDescription>
+          )}
         </Field>
         <Field>
           <FieldLabel htmlFor="contactNumber">Contact Number</FieldLabel>
@@ -50,8 +77,12 @@ export default function RegisterForm() {
             name="contactNumber"
             type="text"
             placeholder="Contact Number"
-            required
           />
+          {getFieldError("contactNumber") && (
+            <FieldDescription className="text-red-600">
+              {getFieldError("contactNumber")}
+            </FieldDescription>
+          )}
         </Field>
         <Field>
           <FieldLabel htmlFor="address">Address</FieldLabel>
@@ -60,8 +91,12 @@ export default function RegisterForm() {
             name="address"
             type="text"
             placeholder="Address"
-            required
           />
+          {getFieldError("address") && (
+            <FieldDescription className="text-red-600">
+              {getFieldError("address")}
+            </FieldDescription>
+          )}
         </Field>
         <FieldGroup>
           <Field>

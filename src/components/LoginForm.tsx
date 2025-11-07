@@ -1,13 +1,29 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "./ui/field";
 import { Input } from "./ui/input";
+import { useActionState } from "react";
+import { loginUser } from "@/services/auth/loginUser";
 
 export default function LoginForm() {
+  const [state, formAction, isPending] = useActionState(loginUser, null);
+
+  const getFieldError = (fieldName: string) => {
+    if (state && state.error) {
+      const fieldError = state.error.find(
+        (err: any) => err.field === fieldName
+      );
+      return fieldError ? fieldError.message : null;
+    } else {
+      return null;
+    }
+  };
+
   return (
-    <form>
+    <form action={formAction}>
       <FieldGroup>
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -18,9 +34,19 @@ export default function LoginForm() {
             placeholder="email"
             required
           />
+          {getFieldError("email") && (
+            <FieldDescription className="text-red-600">
+              {getFieldError("email")}
+            </FieldDescription>
+          )}
         </Field>
         <Field>
           <FieldLabel htmlFor="password">Password</FieldLabel>
+          {getFieldError("password") && (
+            <FieldDescription className="text-red-600">
+              {getFieldError("password")}
+            </FieldDescription>
+          )}
           <Input
             id="password"
             name="password"
@@ -31,7 +57,9 @@ export default function LoginForm() {
         </Field>
         <FieldGroup>
           <Field>
-            <Button type="submit">Login now</Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Loging now..." : "Login"}
+            </Button>
             <FieldDescription>
               Don&apos;t Have an account? please{" "}
               <Link href="/register">Register Now</Link>
