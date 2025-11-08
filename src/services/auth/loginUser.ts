@@ -67,17 +67,17 @@ export async function loginUser(
     cookieStore.set("accessToken", accessTokenObj.accessToken, {
       secure: true,
       httpOnly: true,
-      sameSite: "none",
-      maxAge: parseInt(accessTokenObj["Max-Age"]),
+      maxAge: parseInt(accessTokenObj["Max-Age"]) || 100 * 60 * 60,
       path: refreshTokenObj.Path || "/",
+      sameSite: accessTokenObj["sameSite"] || "none",
     });
 
     cookieStore.set("refreshToken", refreshTokenObj.refreshToken, {
       secure: true,
       httpOnly: true,
-      sameSite: "none",
-      maxAge: parseInt(refreshTokenObj["Max-Age"]),
+      maxAge: parseInt(refreshTokenObj["Max-Age"]) || 1000 * 60 * 60 * 24 * 90,
       path: refreshTokenObj.Path || "/",
+      sameSite: refreshTokenObj["sameSite"] || "none",
     });
 
     return result;

@@ -20,7 +20,7 @@ const PublicNavbar = () => {
   ];
 
   if (role === "ADMIN") {
-    navItems.push({ href: "/dashboard/admin", label: "Admin Dashboard" });
+    navItems.push({ href: "/admin/dashboard", label: "Admin Dashboard" });
   }
 
   return (

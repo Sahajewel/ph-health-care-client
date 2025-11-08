@@ -1,102 +1,135 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextRequest, NextResponse } from "next/server";
-import { userInterface } from "./types/userTypes";
-import { jwtDecode } from "jwt-decode";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import { cookies } from "next/headers";
 
-const roleBasedRoutes = {
-  ADMIN: ["/dashboard/admin"],
-  DOCTOR: ["/doctor/dashboard"],
-  PATIENT: [
-    "/patient/dashboard",
-    "/patient/appointments",
-    "/patient/medical-records",
-  ],
+type UserRole = "ADMIN" | "PATIENT" | "DOCTOR";
+type RouteConfig = {
+  exact: string[];
+  patterns: RegExp[];
 };
 
-const authRoutes = ["/login", "/register", "/forgot-password"];
+const authRoutes = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+];
 
+const commonProtectedRoutes: RouteConfig = {
+  exact: ["/profile", "/settings"],
+  patterns: [],
+};
+
+const doctorProtectedRoutes: RouteConfig = {
+  patterns: [/^\/doctor/],
+  exact: [],
+};
+
+const adminProtectedRoutes: RouteConfig = {
+  patterns: [/^\/admin/],
+  exact: [],
+};
+
+const patientProtectedRoutes: RouteConfig = {
+  patterns: [/^\/dashboard/],
+  exact: [],
+};
+
+const isAuthRoutes = (pathname: string) => {
+  return authRoutes.some((route) => route === pathname);
+};
+
+const isRouteMatches = (
+  pathname: string,
+  routeConfig: RouteConfig
+): boolean => {
+  if (routeConfig.exact.includes(pathname)) {
+    return true;
+  }
+  return routeConfig.patterns.some((pattern: RegExp) => pattern.test(pathname));
+};
+const getRouteOwner = (
+  pathname: string
+): "ADMIN" | "DOCTOR" | "PATIENT" | "COMMON" | null => {
+  if (isRouteMatches(pathname, adminProtectedRoutes)) {
+    return "ADMIN";
+  }
+  if (isRouteMatches(pathname, doctorProtectedRoutes)) {
+    return "DOCTOR";
+  }
+  if (isRouteMatches(pathname, patientProtectedRoutes)) {
+    return "PATIENT";
+  }
+  if (isRouteMatches(pathname, commonProtectedRoutes)) {
+    return "COMMON";
+  }
+  return null;
+};
+
+const getDefaultDashboardRoute = (role: UserRole): string => {
+  switch (role) {
+    case "ADMIN":
+      return "/admin/dashboard";
+    case "DOCTOR":
+      return "/doctor/dashboard";
+    case "PATIENT":
+      return "/dashboard";
+    default:
+      return "/";
+  }
+};
+// This function can be marked `async` if using `await` inside
 export async function proxy(request: NextRequest) {
-  const accessToken = request.cookies.get("accessToken")?.value;
-  const refreshToken = request.cookies.get("refreshToken")?.value;
+  const pathname = request.nextUrl.pathname;
+  const cookieStore = await cookies();
+  const accessToken = request.cookies.get("accessToken")?.value || null;
 
-  const { pathname } = request.nextUrl;
+  let userRole: UserRole | null = null;
+  if (accessToken) {
+    const verifiedToken: JwtPayload | string = jwt.verify(
+      accessToken,
+      process.env.JWT_SECRET as string
+    );
+    if (typeof verifiedToken === "string") {
+      cookieStore.delete("accessToken");
+      cookieStore.delete("refreshToken");
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    userRole = verifiedToken.role;
+  }
 
-  if (!accessToken && !refreshToken && !authRoutes.includes(pathname)) {
+  const routerOwner = getRouteOwner(pathname);
+  const isAuth = isAuthRoutes(pathname);
+
+  if (accessToken && isAuth) {
     return NextResponse.redirect(
-      new URL(`/login?redirect=${pathname}`, request.url)
+      new URL(getDefaultDashboardRoute(userRole as UserRole), request.url)
     );
   }
-
-  let user: userInterface | null = null;
-
-  if (accessToken) {
-    try {
-      user = jwtDecode(accessToken);
-    } catch (err) {
-      console.log("Error decoding access token", err);
-      return NextResponse.redirect(
-        new URL(`/login?redirect=${pathname}`, request.url)
-      );
+  if (routerOwner === null) {
+    return NextResponse.next();
+  }
+  if (routerOwner === "COMMON") {
+    if (!accessToken) {
+      return NextResponse.redirect(new URL("/login", request.url));
     }
+    return NextResponse.next();
   }
 
-  if (!user && refreshToken) {
-    try {
-      const refreshRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh-token`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ refreshToken }),
-        }
-      );
-      if (refreshRes.ok) {
-        const newAccessToken = request.cookies.get("accessToken")?.value;
-        user = jwtDecode(newAccessToken!);
-        return NextResponse.next();
-      } else {
-        const response = NextResponse.redirect(
-          new URL(`/login?redirect=${pathname}`, request.url)
-        );
-        response.cookies.delete("accessToken");
-        response.cookies.delete("refreshToken");
-
-        return response;
-      }
-    } catch (err) {
-      console.log("Error refreshing token", err);
-      const response = NextResponse.redirect(
-        new URL(`/login?redirect=${pathname}`, request.url)
-      );
-      response.cookies.delete("accessToken");
-      response.cookies.delete("refreshToken");
-      return response;
-    }
-  }
-  if (user) {
-    const allowedRoutes = user ? roleBasedRoutes[user.role] : [];
-    if (
-      allowedRoutes &&
-      allowedRoutes.some((r: any) => pathname.startsWith(r))
-    ) {
-      return NextResponse.next();
-    } else {
-      return NextResponse.redirect(new URL(`/unauthorized`, request.url));
-    }
-  }
-  if (user && authRoutes.includes(pathname)) {
-    return NextResponse.redirect(new URL(`/`));
-  }
   return NextResponse.next();
 }
 
+// See "Matching Paths" below to learn more
 export const config = {
   matcher: [
-    "/dashboard/admin/:path*",
-    "/login",
-    "/redirect",
-    "/forgot-password",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
   ],
 };
