@@ -1,15 +1,14 @@
-"use client";
-
 import { useUser } from "@/providers/UserProvider";
 import { Button } from "../ui/button";
 
 import Link from "next/link";
 import { logout } from "@/utility/logout";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
+import { getCookie } from "@/services/auth/tokenHandlers";
+import LogoutButton from "./LououtButton";
 
-const PublicNavbar = () => {
-  const { user } = useUser();
-  const role = user?.role || "guest";
+const PublicNavbar = async () => {
+  const accessToken = await getCookie("accessToken");
 
   const navItems = [
     { href: "#", label: "consultation" },
@@ -18,10 +17,6 @@ const PublicNavbar = () => {
     { href: "#", label: "Diagonstics" },
     { href: "#", label: "NGOs" },
   ];
-
-  if (role === "ADMIN") {
-    navItems.push({ href: "/admin/dashboard", label: "Admin Dashboard" });
-  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur  dark:bg-background/95">
@@ -42,13 +37,12 @@ const PublicNavbar = () => {
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center space-x-2">
-          {role !== "guest" ? (
-            <Button variant="destructive" onClick={() => logout()}>
-              Logout
-            </Button>
+        <div>
+          {accessToken ? (
+            <LogoutButton></LogoutButton>
           ) : (
-            <Link href="/login" className="text-lg font-medium">
+            <Link href="/login">
+              {" "}
               <Button>Login</Button>
             </Link>
           )}
@@ -76,12 +70,12 @@ const PublicNavbar = () => {
                     {link.label}
                   </Link>
                 ))}
-                <div className="border-t pt-4 flex flex-col space-y-4">
-                  <div className="flex justify-center"></div>
-                  {role !== "guest" ? (
-                    <Button variant="destructive">Logout</Button>
+                <div>
+                  {accessToken ? (
+                    <LogoutButton></LogoutButton>
                   ) : (
-                    <Link href="/login" className="text-lg font-medium">
+                    <Link href="/login">
+                      {" "}
                       <Button>Login</Button>
                     </Link>
                   )}

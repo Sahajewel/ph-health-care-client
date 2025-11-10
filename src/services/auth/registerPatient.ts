@@ -2,6 +2,7 @@
 "use server";
 
 import z from "zod";
+import { loginUser } from "./loginUser";
 
 const registerValidationZodSchema = z
   .object({
@@ -68,10 +69,24 @@ export async function registerPatient(_currentSate: any, formData: any) {
         method: "POST",
         body: newFormData,
       }
-    ).then((res) => res.json());
-    return res;
-  } catch (error) {
+    );
+    const result = await res.json();
+    if (result.success) {
+      await loginUser(_currentSate, formData);
+    }
+    return result;
+  } catch (error: any) {
+    if (error?.digest?.startsWith("NEXT_REDIRECT")) {
+      throw error;
+    }
     console.log(error);
-    return { error: "Register Failed" };
+    return {
+      success: false,
+      message: `${
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Register Failed"
+      }`,
+    };
   }
 }

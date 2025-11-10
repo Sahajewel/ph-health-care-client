@@ -2,8 +2,16 @@
 "use server";
 import z from "zod";
 import { parse } from "cookie";
+import jwt from "jsonwebtoken";
+import { redirect } from "next/navigation";
+import { JwtPayload } from "jsonwebtoken";
+import {
+  getDefaultDashboardRoute,
+  isValidRedirectForRole,
+} from "@/lib/auth-utils";
+import { setCookie } from "./tokenHandlers";
 
-import { cookies } from "next/headers";
+type UserRole = "ADMIN" | "PATIENT" | "DOCTOR";
 const loginValidationZodSchema = z.object({
   email: z.email({ message: "Invalid email address" }),
   password: z
@@ -16,6 +24,8 @@ export async function loginUser(
   formData: any
 ): Promise<any> {
   try {
+    const redirectTo = formData.get("redirect") || null;
+
     let accessTokenObj: null | any = null;
     let refreshTokenObj: null | any = null;
     const loginFormData = {
@@ -39,7 +49,6 @@ export async function loginUser(
       },
     });
     const result = await res.json();
-    console.log(res, "res", result, "result");
     const getCookieHeaders = res.headers.getSetCookie();
 
     if (getCookieHeaders && getCookieHeaders.length > 0) {
@@ -62,9 +71,8 @@ export async function loginUser(
     if (!refreshTokenObj) {
       throw new Error("Login failed: No refresh token received");
     }
-    console.log(accessTokenObj.accessToken, "access token");
-    const cookieStore = await cookies();
-    cookieStore.set("accessToken", accessTokenObj.accessToken, {
+
+    await setCookie("accessToken", accessTokenObj.accessToken, {
       secure: true,
       httpOnly: true,
       maxAge: parseInt(accessTokenObj["Max-Age"]) || 100 * 60 * 60,
@@ -72,17 +80,46 @@ export async function loginUser(
       sameSite: accessTokenObj["sameSite"] || "none",
     });
 
-    cookieStore.set("refreshToken", refreshTokenObj.refreshToken, {
+    setCookie("refreshToken", refreshTokenObj.refreshToken, {
       secure: true,
       httpOnly: true,
       maxAge: parseInt(refreshTokenObj["Max-Age"]) || 1000 * 60 * 60 * 24 * 90,
       path: refreshTokenObj.Path || "/",
       sameSite: refreshTokenObj["sameSite"] || "none",
     });
+    const verifiedToken: JwtPayload | string = jwt.verify(
+      accessTokenObj.accessToken,
+      process.env.JWT_SECRET as string
+    );
+    if (typeof verifiedToken === "string") {
+      throw new Error("Invalid token received");
+    }
+    const userRole: UserRole = verifiedToken.role;
 
-    return result;
-  } catch (error) {
+    if (!result.success) {
+      throw new Error(result.message || "Login failed");
+    }
+
+    if (redirectTo) {
+      const requestedPath = redirectTo.toString();
+      if (isValidRedirectForRole(requestedPath, userRole)) {
+        redirect(`${requestedPath}?loggedIn=true`);
+      } else {
+        redirect(`${getDefaultDashboardRoute(userRole)}?loggedIn=true`);
+      }
+    } else {
+      redirect(`${getDefaultDashboardRoute(userRole)}?loggedIn=true`);
+    }
+  } catch (error: any) {
+    if (error?.digest?.startsWith("NEXT_REDIRECT")) {
+      throw error;
+    }
     console.log(error);
-    return { error: "Login Failed" };
+    return {
+      success: false,
+      message: `${
+        process.env.NODE_ENV === "development" ? error.message : "Login Failed"
+      }`,
+    };
   }
 }
