@@ -1,6 +1,6 @@
 "use client";
 
-import { userInterface } from "@/types/userTypes";
+import { userInterface } from "@/types/user.interface";
 import checkAuthStatus from "@/utility/auth";
 import { createContext, useContext, useEffect, useState } from "react";
 
